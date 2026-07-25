@@ -24,7 +24,7 @@ class DocumentProcessor:
         self.memory = load_memory(self.memory_file)
         
         os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY", "")
-        self.llm = "gemini-2.5-flash"
+        self.llm = "gemini/gemini-2.5-flash"
         
         self.extraction_agent = self.create_extraction_agent()
         self.validation_agent = self.create_validation_agent()
@@ -122,13 +122,13 @@ VALIDATION ERRORS : {errors}
 RETURN JSON:
 
 {{
-    "mistake_description:"string",
+    "mistake_description":"string",
     "correction_rule":"rule to prevent this",
-    "confidence":"0.0-1.0" 
+    "confidence":"0.0-1.0"
 }}
 """,
-            agent = self.validation_agent,
-            expected_output = ""
+            agent = self.reflection_agent,
+            expected_output = "JSON with mistake_description, correction_rule and confidence"
         )
     #clean your ```
     def _parse_json_from_result(self,result_str):
