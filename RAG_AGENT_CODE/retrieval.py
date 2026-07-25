@@ -18,7 +18,7 @@ class Retriever:
         # self._retriever = self._load(embeddings)
         self.min_score=min_score
         self.verbose=verbose
-        self._store = self.self._load(embeddings)
+        self._store = self._load(embeddings)
 
     def _load(self, embeddings):
         if not os.path.exists(self.index_path):
