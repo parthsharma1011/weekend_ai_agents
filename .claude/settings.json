@@ -18,7 +18,8 @@
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE python ingest.py ./docs)",
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE printf 'Who was Ronald Reagan and what did he do?\\\\nquit\\\\n')",
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE printf 'what is this document about?\\\\nquit\\\\n')",
-      "Bash(grep -viE \"warning|fetching|it/s|quota|seconds|key:|value:|\\\\}|\\\\{|^\\\\s*$\")"
+      "Bash(grep -viE \"warning|fetching|it/s|quota|seconds|key:|value:|\\\\}|\\\\{|^\\\\s*$\")",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE printf 'What was the efficacy rate and outcome of clinical trial T001?\\\\nquit\\\\n')"
     ]
   }
 }
