@@ -1,0 +1,51 @@
+# ============================================================================
+#  RAG Agent — dependencies  (tested on Python 3.12)
+# ============================================================================
+#  Install:  python -m venv .venv && source .venv/bin/activate
+#            pip install -r requirements.txt
+# ----------------------------------------------------------------------------
+
+# --- Core LangChain stack (pinned to a tested-compatible set) ----------------
+langchain==0.3.25
+langchain-core==0.3.59
+langchain-community==0.3.24
+langchain-text-splitters==0.3.8
+
+# --- LLM provider: Google Gemini (replaces AWS Bedrock) ----------------------
+# Talks to Gemini with a single GEMINI_API_KEY from Google AI Studio.
+langchain-google-genai>=2.0.7,<3.0
+
+# --- LangGraph (the agent graph runtime) -------------------------------------
+langgraph==0.2.69
+
+# --- Typed settings: one source of truth for all config ----------------------
+pydantic==2.11.4
+pydantic-settings==2.14.2
+
+# --- Observability (optional; auto-disables if keys are absent) --------------
+langfuse==2.60.4
+
+# --- Embeddings (local, free, no API key) + vector store ---------------------
+# Kept local on purpose: the vector index works offline and costs nothing,
+# so only the chat LLM depends on the network. See teach.md.
+fastembed==0.4.2
+faiss-cpu==1.9.0
+
+# --- Document loading --------------------------------------------------------
+pypdf>=5.4.0,<6.0
+
+# --- Web-search fallback (optional; auto-disables if key is absent) ----------
+tavily-python==0.5.4
+
+# --- Env-file loading --------------------------------------------------------
+python-dotenv==1.1.0
+
+# ============================================================================
+#  OPTIONAL — "famous library" guardrails upgrade
+# ============================================================================
+#  The built-in GuardrailEngine (guardrails.py) works with ZERO extra installs.
+#  Uncomment below to plug Guardrails AI (https://github.com/guardrails-ai)
+#  in as an extra validator. The code auto-detects it and falls back gracefully
+#  if it is not installed.
+#
+# guardrails-ai>=0.5.0

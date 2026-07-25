@@ -1,16 +1,16 @@
 .
 └── RAG_AGENT_CODE/
-    ├── .env #all my secrets will be in this file 
-    ├── .env.example     #example env so tohet example load
-    ├── requirements.txt # all librarors and their ver are here
+    ├── .env #all my secrets will be in this file                      done  
+    ├── .env.example     #example env so tohet example load            done 
+    ├── requirements.txt # all librarors and their ver are here        done 
     ├── config.py.       #top-k chunk_size.                            done 
     ├── guardrails.py    # safety check rag                            done 
-    ├── memory.py        #convertions history 
-    ├── retrieval.py     # retreive context
-    ├── ingest.py        # doc igested
-    ├── self_critique.py #seconds llm pass
-    ├── agent.py         #agentic rag # langgraph #prod ready
-    ├── main.py          # main code 
+    ├── memory.py        #convertions history                          done
+    ├── retrieval.py     # retreive context                            done
+    ├── ingest.py        # doc igested                                 done
+    ├── self_critique.py #seconds llm pass                             done
+    ├── agent.py         #agentic rag # langgraph #prod ready          done
+    ├── main.py          # main code                                   
     ├── docs/
     │   ├── file.pdf
     │   ├── new.pdf

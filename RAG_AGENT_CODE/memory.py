@@ -1,63 +1,68 @@
-#short term - long term
+from __future__ import annotations
 
-import json 
+import json
 from pathlib import Path
 
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict, messages_to_dict
 
 
-
 class MemoryManager:
-    def __init__(self, session_id, memory_dir,window=10):
+    """Per-session conversation memory: buffer + windowing + disk persistence."""
+
+    def __init__(
+        self,
+        session_id: str = "default",
+        memory_dir: str = "./memory_store",
+        window: int = 10,
+    ) -> None:
         self.session_id = session_id
         self.window = window
         self._dir = Path(memory_dir)
         self._buffer = InMemoryChatMessageHistory()
-        self.load() #resume a prevous ssession if one exist?
-        
-    #where this session is lives? memory?
+        self.load()  # resume a previous session if one exists
+
+    # -- where this session lives on disk -------------------------------------
     @property
-    def _path(self):
+    def _path(self) -> Path:
         return self._dir / f"{self.session_id}.json"
-    
-    #method to wrire new momory to history
-    #writin to memory -> 
-    def add_user_message(self, content):
+
+    # -- writing to memory -----------------------------------------------------
+    def add_user_message(self, content: str) -> None:
         self._buffer.add_user_message(content)
         self.save()
-        
-    def add_ai_message(self, content):
+
+    def add_ai_message(self, content: str) -> None:
         self._buffer.add_ai_message(content)
         self.save()
-        
-    #readig from memory 
+
+    # -- reading from memory ---------------------------------------------------
     @property
-    def all_messages(self):
+    def all_messages(self) -> list[BaseMessage]:
+        """The full conversation (every turn ever, this session)."""
         return list(self._buffer.messages)
-    
-    def window_messages(self):
-        return self.all_messages[-self.window:] if self.window else self.all_messages
-    
-    
-    def save(self):
+
+    def window_messages(self) -> list[BaseMessage]:
+        """Only the most recent `window` messages — what the LLM actually sees."""
+        return self.all_messages[-self.window :] if self.window else self.all_messages
+
+    # -- persistence -----------------------------------------------------------
+    def save(self) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)
         payload = messages_to_dict(self._buffer.messages)
-        self._path.write_text(json.dumps(payload, indent=2), encoding='utf-8')
-        
-    def load(self):
+        self._path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def load(self) -> None:
         if not self._path.exists():
             return
         try:
-            payload = json.loads(self._path.read_text(encoding='utf-8'))
+            payload = json.loads(self._path.read_text(encoding="utf-8"))
             for msg in messages_from_dict(payload):
                 self._buffer.add_message(msg)
-        except Exception as e:
-            print(f"Failed to load memory: {e}")
-            
-    def clear(self):
+        except Exception as exc:  # corrupt file shouldn't crash the app
+            print(f"[memory] Could not load session '{self.session_id}': {exc}")
+
+    def clear(self) -> None:
         self._buffer.clear()
         if self._path.exists():
             self._path.unlink()
-
-        

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python main.py)",
+      "Bash(python app.py)",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE printf \"what is this document about?\\\\nquit\\\\n\")",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE python main.py)",
+      "Bash(export KMP_DUPLICATE_LIB_OK=TRUE)",
+      "Bash(env)",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE python -c ' *)",
+      "Bash(pip index *)",
+      "Bash(python -c ' *)",
+      "Bash(git log *)"
+    ]
+  }
+}
