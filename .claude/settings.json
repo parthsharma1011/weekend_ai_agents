@@ -10,7 +10,11 @@
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE python -c ' *)",
       "Bash(pip index *)",
       "Bash(python -c ' *)",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(grep -rInE \"AQ\\\\.[A-Za-z0-9_-]{20,}|tvly-[A-Za-z0-9-]+|sk-[a-zA-Z0-9-]{20,}|AIza[0-9A-Za-z_-]{35}\" RAG_AGENT_CODE/main.py RAG_AGENT_CODE/config.py RAG_AGENT_CODE/retrieval.py RAG_AGENT_CODE/self_critique.py RAG_AGENT_CODE/memory_store/default.json)",
+      "Bash(grep -rInE \"AQ\\\\.[A-Za-z0-9_-]{20,}|tvly-|sk-[a-zA-Z0-9]{20,}|AIza[0-9A-Za-z_-]{35}\" RAG_AGENT_CODE/hooks/ \"RAG_AGENT_CODE/docs/Ronald Wilson Reagan[a] \\(February 6\\).txt\")",
+      "Bash(grep -oiE \"source.{0,60}\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

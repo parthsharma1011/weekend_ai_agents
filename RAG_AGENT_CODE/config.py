@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # --- Retrieval / vector store ------------------------------------------
     faiss_index_path: str = "./faiss_index"
     top_k: int = 4
+    retrieval_min_score = 0.50 #cutoff usually number is 0.25 - 0.33
     chunk_size: int = 500
     chunk_overlap: int = 50
 

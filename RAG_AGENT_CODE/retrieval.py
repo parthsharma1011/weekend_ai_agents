@@ -9,10 +9,16 @@ from langchain_core.documents import Document
 class Retriever:
     """Loads the FAISS index once and returns the top-k chunks for a query."""
 
-    def __init__(self, embeddings, index_path: str = "./faiss_index", top_k: int = 4):
+    def __init__(self, embeddings, index_path: str = "./faiss_index", 
+                 top_k: int = 4,
+                 min_score=0.5,
+                 verbose=False):
         self.index_path = index_path
         self.top_k = top_k
-        self._retriever = self._load(embeddings)
+        # self._retriever = self._load(embeddings)
+        self.min_score=min_score
+        self.verbose=verbose
+        self._store = self.self._load(embeddings)
 
     def _load(self, embeddings):
         if not os.path.exists(self.index_path):
@@ -20,19 +26,24 @@ class Retriever:
                 f"FAISS index not found at '{self.index_path}'. "
                 "Build it first with:  python ingest.py ./docs"
             )
-        store = FAISS.load_local(
+        return FAISS.load_local(
             self.index_path,
             embeddings,
             # Safe here: the index is one we built ourselves, locally.
             allow_dangerous_deserialization=True,
         )
-        return store.as_retriever(search_kwargs={"k": self.top_k})
+        # return store.as_retriever(search_kwargs={"k": self.top_k}) #4 relevant chunks
 
     def retrieve_docs(self, query: str) -> list[Document]:
         if not query:
             return []
-        return self._retriever.invoke(query)
-
+        # return self._retriever.invoke(query)
+        scored = self._store.similarity_search_with_relevance_scores(query, k=self.top_k)
+        if self.verbose:
+            for doc, score in scored:
+                print(f"{score:.3f} {doc.page_content}")
+        return [doc for doc, score in scored if score >= self.min_score]
+    
     def retrieve(self, query: str) -> str:
         """Return the top-k chunks joined into a single context string."""
         docs = self.retrieve_docs(query)

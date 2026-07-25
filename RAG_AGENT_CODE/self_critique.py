@@ -22,7 +22,7 @@ _SYSTEM = (
 class SelfCritic:
     """Grades and, when needed, rewrites an answer using the same LLM."""
 
-    ACCEPT_THRESHOLD = 7
+    ACCEPT_THRESHOLD = 7 #why 
 
     def __init__(self, providers: Providers):
         self.providers = providers
