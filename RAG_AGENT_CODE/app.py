@@ -267,8 +267,15 @@ class ChatService:
             enabled=self.settings.tavily_enabled,
             api_key=self.settings.tavily_api_key,
         )
-        critic = SelfCritic(self.providers)
-        self.graph = RagAgent(self.providers, retriever, web_tool, critic).build()
+        # SelfCritic builds an LLM chain in its constructor, so in offline mode
+        # it must not be built at all.
+        offline = self.settings.offline_mode
+        critic = None if offline else SelfCritic(self.providers)
+        if offline:
+            logger.info("OFFLINE_MODE enabled — serving retrieval results, no LLM calls")
+        self.graph = RagAgent(
+            self.providers, retriever, web_tool, critic, offline=offline
+        ).build()
 
     def ask(self, user_input: str, session_id: str) -> dict:
         checked = self.guardrails.check_input(user_input)

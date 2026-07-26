@@ -45,9 +45,20 @@ services:
       - key: FASTEMBED_CACHE_PATH
         value: "/opt/render/project/src/RAG_AGENT_CODE/.fastembed_cache"
 
+      # Offline mode: no Gemini calls at all. Retrieval is entirely local
+      # (fastembed embeddings + FAISS), so the app keeps answering with the
+      # matching document passages instead of LLM-written prose — and it cannot
+      # run out of quota, because it never calls a paid API. Set this to "false"
+      # once a Gemini key with headroom is in place.
+      - key: OFFLINE_MODE
+        value: "true"
+
       # --- Secrets: declared here, values entered in the dashboard -----------
       # `sync: false` means "this service needs this variable, but its value is
       # NOT in git". Render prompts you for it on first deploy.
+      #
+      # Both are OPTIONAL while OFFLINE_MODE is true: Gemini is never called,
+      # and web search self-disables when its key is absent. Leave them blank.
       - key: GEMINI_API_KEY
         sync: false
       - key: TAVILY_API_KEY

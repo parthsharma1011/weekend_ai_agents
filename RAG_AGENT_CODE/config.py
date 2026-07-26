@@ -23,6 +23,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # --- Offline mode -------------------------------------------------------
+    # When true, NOTHING calls Gemini: no generation, no self-critique, and the
+    # client is never even constructed. Retrieval still works in full, because
+    # the embeddings (fastembed) and the vector store (FAISS) are local and need
+    # no key — so the app answers with the matching document passages instead of
+    # LLM-written prose. This is what keeps the deploy serving when the Gemini
+    # quota is exhausted, at the cost of the answers being extractive.
+    offline_mode: bool = False
+
     # --- Google Gemini (the chat LLM — replaces AWS Bedrock) ---------------
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash"
@@ -35,7 +44,12 @@ class Settings(BaseSettings):
     # --- Retrieval / vector store ------------------------------------------
     faiss_index_path: str = "./faiss_index"
     top_k: int = 4
-    retrieval_min_score: float = 0.50 #cutoff usually number is 0.25 - 0.33
+    # 0.50 filtered out almost everything: broad questions ("what is this
+    # document about?") score ~0.40-0.47, so they matched nothing locally and
+    # fell through to web search even though the answer was in the documents.
+    # 0.35 keeps them. render.yaml sets this too, but the default matters for a
+    # service created by hand in the dashboard, which never reads that file.
+    retrieval_min_score: float = 0.35
     chunk_size: int = 500
     chunk_overlap: int = 50
 
@@ -91,6 +105,15 @@ class Providers:
         """The Gemini chat model, via LangChain's Google GenAI integration."""
         from langchain_google_genai import ChatGoogleGenerativeAI
 
+        if self.settings.offline_mode:
+            # A guard, not a code path anyone should hit: in offline mode the
+            # agent never builds an LLM chain. Reaching here means a caller
+            # bypassed that, and silently making a billed API call would be worse
+            # than failing loudly.
+            raise RuntimeError(
+                "OFFLINE_MODE is enabled, so no LLM is available. "
+                "Set OFFLINE_MODE=false to use Gemini."
+            )
         if not self.settings.gemini_api_key:
             raise RuntimeError(
                 "GEMINI_API_KEY is missing. Get a key from "

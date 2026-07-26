@@ -35,6 +35,18 @@ _SYSTEM = (
 )
 
 
+NOTHING_FOUND = (
+    "I could not find anything about that in the indexed documents. "
+    "Try rephrasing, or ask about the Reagan biography or the T001 clinical "
+    "trial report."
+)
+
+_OFFLINE_PREAMBLE = (
+    "Answering directly from the indexed documents (no language model is "
+    "running, so these are the matching passages verbatim):"
+)
+
+
 class RagAgent:
     """Builds and compiles the retrieval-augmented-generation graph."""
 
@@ -43,12 +55,21 @@ class RagAgent:
         providers: Providers,
         retriever: Retriever,
         web_tool: WebSearchTool,
-        critic: SelfCritic,
+        critic: SelfCritic | None = None,
+        offline: bool = False,
     ):
         self.providers = providers
         self.retriever = retriever
         self.web_tool = web_tool
         self.critic = critic
+        self.offline = offline
+
+        if offline:
+            # Deliberately do NOT touch providers.llm: reading that property
+            # constructs the Gemini client. In offline mode the key may be
+            # absent entirely, and nothing here should require one.
+            self._gen_chain = None
+            return
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -85,8 +106,24 @@ class RagAgent:
         combined = (web + "\n\n" + state.get("context", "")).strip()
         return {"context": combined}
 
+    @staticmethod
+    def _extractive_answer(context: str) -> str:
+        """Offline answer: hand back the retrieved passages themselves.
+
+        Without an LLM there is nothing to synthesise prose from, so the honest
+        thing is to show the source text and say that is what we are doing,
+        rather than dress it up as a generated answer.
+        """
+        context = context.strip()
+        if not context:
+            return NOTHING_FOUND
+        return f"{_OFFLINE_PREAMBLE}\n\n{context}"
+
     def generate_node(self, state: AgentState) -> dict:
-        """Call the LLM with the retrieved context and conversation history."""
+        """Produce the answer — from the LLM, or from the passages if offline."""
+        if self.offline:
+            return {"answer": self._extractive_answer(state.get("context", ""))}
+
         answer = self._gen_chain.invoke(
             {
                 "context": state.get("context", ""),
@@ -118,7 +155,6 @@ class RagAgent:
         g.add_node("retrieve_node", self.retrieve_node)
         g.add_node("tool_node", self.tool_node)
         g.add_node("generate_node", self.generate_node)
-        g.add_node("critique_node", self.critique_node)
         g.add_node("output_node", self.output_node)
 
         g.add_edge(START, "retrieve_node")
@@ -128,7 +164,16 @@ class RagAgent:
             {"tool_node": "tool_node", "generate_node": "generate_node"},
         )
         g.add_edge("tool_node", "generate_node")
-        g.add_edge("generate_node", "critique_node")
-        g.add_edge("critique_node", "output_node")
+
+        if self.offline:
+            # The critique step is a second LLM pass, so it has nothing to do
+            # offline — and including it would double the cost of every turn
+            # for a model that is not there.
+            g.add_edge("generate_node", "output_node")
+        else:
+            g.add_node("critique_node", self.critique_node)
+            g.add_edge("generate_node", "critique_node")
+            g.add_edge("critique_node", "output_node")
+
         g.add_edge("output_node", END)
         return g.compile()

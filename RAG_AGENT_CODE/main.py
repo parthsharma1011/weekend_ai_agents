@@ -45,8 +45,15 @@ class ChatApp:
             enabled = self.settings.tavily_enabled,
             api_key = self.settings.tavily_api_key
         )
-        critic = SelfCritic(self.providers)
-        self.graph = RagAgent(self.providers,retriever,web_tool,critic,).build()
+        # Offline mode: no Gemini calls at all, so the critic (which builds an
+        # LLM chain up front) must not be constructed either.
+        offline = self.settings.offline_mode
+        critic = None if offline else SelfCritic(self.providers)
+        if offline:
+            print("[main] OFFLINE_MODE enabled — answers come straight from the documents.")
+        self.graph = RagAgent(
+            self.providers, retriever, web_tool, critic, offline=offline
+        ).build()
         
     def _handle_turn(self, user_input):
         checked = self.guardrails.check_input(user_input)
