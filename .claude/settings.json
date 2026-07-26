@@ -24,7 +24,16 @@
       "Bash(timeout 400 python self_reflection.py)",
       "Bash(grep -viE \"^\\\\s*$|warning\")",
       "Bash(python self_reflection.py)",
-      "Bash(grep -viE \"^\\\\s*$\")"
+      "Bash(grep -viE \"^\\\\s*$\")",
+      "Bash(git ls-tree *)",
+      "Bash(grep -iE \"\\(^|/\\)\\\\.env$\")",
+      "Bash(python3 -c \"print\\([l.split\\('=',1\\)[1].strip\\(\\).strip\\('\\\\\"'\\) for l in open\\('RAG_AGENT_CODE/.env'\\) if l.strip\\(\\).startswith\\('GEMINI_API_KEY'\\)][0]\\)\")",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}\\\\n' https://generativelanguage.googleapis.com/v1beta/models?key=__CMDSUB_OUTPUT__)",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}\\\\n' -H 'Authorization: Bearer __CMDSUB_OUTPUT__' https://generativelanguage.googleapis.com/v1beta/models)",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent -H 'Content-Type: application/json' -H 'X-goog-api-key: __CMDSUB_OUTPUT__' -X POST -d '{\"contents\":[{\"parts\":[{\"text\":\"Explain how AI works in a few words\"}]}]}')",
+      "Bash(grep -v '^$')",
+      "Bash(python3 -m json.tool .claude/settings.json)",
+      "Bash(git rm *)"
     ]
   }
 }

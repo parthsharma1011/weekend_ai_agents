@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+
+# Runtime artifacts — regenerated on each run, never version them
+memory_store/
+faiss_index/
