@@ -36,7 +36,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          # httpx is what fastapi.testclient runs on. It arrives transitively
+          # today, but test_web.py depends on it directly, so pin it here rather
+          # than let an unrelated dependency bump break the test job.
+          pip install pytest httpx
 
       # Would have caught both crash bugs we fixed: the missing type annotation
       # on retrieval_min_score (pydantic raises at class-definition time) and

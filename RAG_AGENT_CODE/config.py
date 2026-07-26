@@ -55,6 +55,15 @@ class Settings(BaseSettings):
     # Try to use the "famous library" (Guardrails AI) if it is installed.
     use_guardrails_ai: bool = True
 
+    # --- Web layer (app.py only; the CLI in main.py ignores all of these) ---
+    # A public URL is a very different threat model from a local CLI: every turn
+    # spends two LLM calls (generate + critique) against YOUR key, so the HTTP
+    # layer has to bound request size, request rate, and per-visitor state.
+    max_message_chars: int = 2000   # reject oversized bodies before tokenising
+    rate_limit_per_minute: int = 10  # per client IP
+    max_web_sessions: int = 200     # live conversations held in memory (LRU)
+    max_stored_messages: int = 40    # per-session history cap, see MemoryManager
+
     @property
     def langfuse_enabled(self) -> bool:
         return bool(self.langfuse_public_key and self.langfuse_secret_key)

@@ -62,3 +62,14 @@ services:
       # sends them to web search instead of your documents. 0.35 keeps them.
       - key: RETRIEVAL_MIN_SCORE
         value: "0.35"
+
+      # --- Public-endpoint limits --------------------------------------------
+      # /api/chat is unauthenticated, and ONE chat turn costs TWO Gemini calls
+      # (generate + self-critique). The Gemini free tier returns
+      # RESOURCE_EXHAUSTED at 20 requests, so 10 turns/min from a single visitor
+      # is already the whole free quota. Lower this if you stay on the free tier.
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
+
+      - key: MAX_MESSAGE_CHARS
+        value: "2000"
