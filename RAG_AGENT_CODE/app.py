@@ -195,6 +195,52 @@ def client_key(request: Request) -> str:
 # ---------------------------------------------------------------------------
 # The agent, wrapped
 # ---------------------------------------------------------------------------
+GENERIC_FAILURE = "The agent hit an internal error. Please try again."
+
+# Matched against the lowercased exception text. Kept to distinctive phrases:
+# bare status numbers like "429" would false-positive on ids and timings.
+_QUOTA_MARKERS = (
+    "resource_exhausted",
+    "quota",
+    "rate limit",
+    "ratelimit",
+    "too many requests",
+)
+_AUTH_MARKERS = (
+    "permission_denied",
+    "unauthenticated",
+    "api key not valid",
+    "invalid api key",
+    "api_key_invalid",
+)
+
+
+def describe_failure(exc: BaseException) -> str:
+    """Turn an upstream exception into a safe, actionable sentence.
+
+    Returning the raw exception leaks filesystem paths and upstream error bodies,
+    but a single generic string is useless to whoever has to fix it: "quota
+    exhausted" and "your key is rejected" need completely different responses,
+    and neither is a secret. So we classify coarsely and say nothing more.
+    """
+    # The class name is included because some clients (google-api-core) put the
+    # useful word only in the type, e.g. ResourceExhausted, while grpc puts it
+    # only in the message. Auth is checked first: it is the more specific
+    # condition, and a rejected key can surface alongside quota wording.
+    text = f"{type(exc).__name__} {exc}".lower()
+    if any(marker in text for marker in _AUTH_MARKERS):
+        return (
+            "The assistant is not configured correctly — its API credentials "
+            "were rejected. The site owner needs to check the API key."
+        )
+    if any(marker in text for marker in _QUOTA_MARKERS):
+        return (
+            "The assistant has used up its API quota for now. "
+            "Please try again in a few minutes."
+        )
+    return GENERIC_FAILURE
+
+
 class ChatService:
     """The same wiring as ChatApp in main.py, but returns text instead of printing."""
 
@@ -247,14 +293,13 @@ class ChatService:
 
             try:
                 result = self.graph.invoke(state)
-            except Exception:
-                # Log the detail, return none of it: the exception text can carry
-                # filesystem paths and upstream API error bodies.
+            except Exception as exc:
+                # Full detail to the log, a classified sentence to the caller:
+                # the exception text can carry filesystem paths and upstream API
+                # error bodies, but "out of quota" vs "key rejected" is both safe
+                # to say and the only part anyone can act on.
                 logger.exception("graph invocation failed")
-                return {
-                    "answer": "The agent hit an internal error. Please try again.",
-                    "error": True,
-                }
+                return {"answer": describe_failure(exc), "error": True}
 
             answer = result.get("answer", "")
             checked_out = self.guardrails.check_output(answer)
@@ -358,6 +403,12 @@ def chat(req: ChatRequest, request: Request, response: Response) -> dict:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(BASE_DIR / "static" / "index.html")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Response:
+    """Every browser asks for this; without a route each visit logs a 404."""
+    return Response(status_code=204)
 
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")

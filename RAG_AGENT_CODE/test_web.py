@@ -11,7 +11,15 @@ from fastapi import Request
 from fastapi.testclient import TestClient
 
 import app as app_module
-from app import RateLimiter, SessionStore, client_key, new_session_id, valid_session_id
+from app import (
+    GENERIC_FAILURE,
+    RateLimiter,
+    SessionStore,
+    client_key,
+    describe_failure,
+    new_session_id,
+    valid_session_id,
+)
 
 
 # --- Session ids -------------------------------------------------------------
@@ -260,3 +268,46 @@ def test_rate_limited_clients_get_429_and_retry_after(monkeypatch):
 def test_healthz_reports_ready(client):
     http, _ = client
     assert http.get("/healthz").json() == {"status": "ok", "ready": True}
+
+
+def test_favicon_does_not_404(client):
+    http, _ = client
+    assert http.get("/favicon.ico").status_code == 204
+
+
+# --- Failure classification --------------------------------------------------
+class _FakeUpstreamError(Exception):
+    pass
+
+
+def test_quota_errors_tell_the_user_to_wait():
+    """The real Gemini failure: grpc RESOURCE_EXHAUSTED with a quota body."""
+    exc = _FakeUpstreamError(
+        "status = StatusCode.RESOURCE_EXHAUSTED details = 'You exceeded your "
+        "current quota, please check your plan and billing details.'"
+    )
+    message = describe_failure(exc)
+    assert "quota" in message.lower()
+    assert "try again" in message.lower()
+
+
+def test_auth_errors_point_at_configuration():
+    exc = _FakeUpstreamError("400 API key not valid. Please pass a valid API key.")
+    message = describe_failure(exc)
+    assert "api key" in message.lower()
+
+
+def test_unknown_errors_stay_generic():
+    assert describe_failure(ValueError("index shard 7 at /opt/render/src")) == GENERIC_FAILURE
+
+
+def test_no_classification_leaks_the_raw_exception():
+    """Whatever branch is taken, upstream text must never reach the client."""
+    secrets = [
+        "/opt/render/project/src/RAG_AGENT_CODE/faiss_index",
+        "AIzaSyExampleKeyMaterial",
+        "debug_error_string",
+    ]
+    for raw in secrets:
+        for exc in (ValueError(raw), _FakeUpstreamError(f"quota exceeded {raw}")):
+            assert raw not in describe_failure(exc)
