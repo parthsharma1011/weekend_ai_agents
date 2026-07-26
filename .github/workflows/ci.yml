@@ -1,0 +1,89 @@
+# Continuous Integration — runs on every push and pull request to main.
+#
+# Purpose: catch breakage BEFORE Render builds it. Render deploys whatever is on
+# main; CI is what tells you main is worth deploying.
+#
+# Note: no API key is needed anywhere in this file. Providers.llm is a
+# cached_property, so the Gemini client is only constructed on first access —
+# importing the modules never touches the network.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests and import checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: RAG_AGENT_CODE/requirements.txt
+
+      - name: Install dependencies
+        working-directory: RAG_AGENT_CODE
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      # Would have caught both crash bugs we fixed: the missing type annotation
+      # on retrieval_min_score (pydantic raises at class-definition time) and
+      # the self.self._load typo in Retriever.__init__.
+      - name: Import smoke test
+        working-directory: RAG_AGENT_CODE
+        run: |
+          python -c "import config, guardrails, memory, retrieval, self_critique, agent, app; print('all modules import OK')"
+
+      - name: Validate settings load
+        working-directory: RAG_AGENT_CODE
+        run: |
+          python -c "from config import Settings; s = Settings(); print('settings OK, min_score =', s.retrieval_min_score)"
+
+      # Proves the build command Render will run actually works, using the
+      # committed docs. If ingestion breaks, the deploy would boot with no index.
+      - name: Build the FAISS index (same command Render runs)
+        working-directory: RAG_AGENT_CODE
+        run: python ingest.py ./docs
+
+      - name: Run unit tests
+        working-directory: RAG_AGENT_CODE
+        run: pytest -q
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      # Blocks the commit patterns that have actually leaked here before: a live
+      # key pasted inline into a tracked file. Markdown is excluded so docs can
+      # show placeholder formats.
+      - name: Fail if an API key was committed
+        run: |
+          if git grep -nIE "(AQ\.[A-Za-z0-9_-]{40,}|AIza[0-9A-Za-z_-]{35}|tvly-[A-Za-z0-9]{20,})" -- . ':!*.md'; then
+            echo "::error::An API key appears to be committed. Remove it, then ROTATE the key — it is compromised."
+            exit 1
+          fi
+          echo "No API keys found in tracked files."
+
+      - name: Fail if a .env file was committed
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "::error::A .env file is tracked. Remove it with: git rm --cached <path>"
+            exit 1
+          fi
+          echo "No .env files tracked."

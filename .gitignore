@@ -8,3 +8,4 @@ __pycache__/
 # Runtime artifacts — regenerated on each run, never version them
 memory_store/
 faiss_index/
+.fastembed_cache/

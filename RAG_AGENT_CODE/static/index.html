@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gemini RAG Agent</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: #0f1115; color: #e6e6e6; display: flex; justify-content: center;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 720px; padding: 24px; display: flex; flex-direction: column; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color: #8b93a7; font-size: 13px; margin-bottom: 20px; }
+    #log {
+      flex: 1; min-height: 320px; border: 1px solid #262a35; border-radius: 10px;
+      padding: 16px; overflow-y: auto; background: #151822; margin-bottom: 12px;
+    }
+    .msg { margin-bottom: 14px; line-height: 1.5; white-space: pre-wrap; }
+    .who { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #6f7891; margin-bottom: 4px; }
+    .user .who { color: #6ea8fe; }
+    .bot .who  { color: #6ee7a8; }
+    .err  { color: #ff8f8f; }
+    form { display: flex; gap: 8px; }
+    input {
+      flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid #262a35;
+      background: #151822; color: #e6e6e6; font-size: 14px;
+    }
+    input:focus { outline: none; border-color: #3d5afe; }
+    button {
+      padding: 12px 20px; border-radius: 8px; border: 0; background: #3d5afe;
+      color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .hint { color: #6f7891; font-size: 12px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Gemini RAG Agent</h1>
+    <div class="sub">LangChain + LangGraph &middot; retrieval, guardrails, self-critique</div>
+
+    <div id="log">
+      <div class="msg bot">
+        <div class="who">Agent</div>
+        Ask me about the documents I've indexed — the Reagan biography or the
+        T001 clinical trial report. If I can't find an answer locally, I'll fall
+        back to web search.
+      </div>
+    </div>
+
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Ask a question..." />
+      <button id="send" type="submit">Send</button>
+    </form>
+    <div class="hint">Try: "What was the efficacy rate of clinical trial T001?"</div>
+  </div>
+
+<script>
+const log = document.getElementById('log');
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const send = document.getElementById('send');
+
+function add(who, text, cls) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + (who === 'You' ? 'user' : 'bot');
+  const h = document.createElement('div');
+  h.className = 'who'; h.textContent = who;
+  const b = document.createElement('div');
+  if (cls) b.className = cls;
+  b.textContent = text;
+  d.append(h, b); log.append(d);
+  log.scrollTop = log.scrollHeight;
+  return b;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = input.value.trim();
+  if (!q) return;
+
+  add('You', q);
+  input.value = '';
+  send.disabled = true;
+  const pending = add('Agent', 'Thinking...');
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: q })
+    });
+    const data = await res.json();
+    pending.textContent = data.answer;
+    if (data.error || data.blocked) pending.className = 'err';
+  } catch (err) {
+    pending.textContent = 'Network error: ' + err.message;
+    pending.className = 'err';
+  } finally {
+    send.disabled = false;
+    input.focus();
+  }
+});
+</script>
+</body>
+</html>

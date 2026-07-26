@@ -40,6 +40,11 @@ tavily-python==0.5.4
 # --- Env-file loading --------------------------------------------------------
 python-dotenv==1.1.0
 
+# --- Web layer (app.py: HTTP API + static frontend, used for deployment) ------
+# main.py (the CLI) does not need these; they are only for `uvicorn app:app`.
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
 # ============================================================================
 #  OPTIONAL — "famous library" guardrails upgrade
 # ============================================================================

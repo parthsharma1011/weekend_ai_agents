@@ -33,7 +33,32 @@
       "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent -H 'Content-Type: application/json' -H 'X-goog-api-key: __CMDSUB_OUTPUT__' -X POST -d '{\"contents\":[{\"parts\":[{\"text\":\"Explain how AI works in a few words\"}]}]}')",
       "Bash(grep -v '^$')",
       "Bash(python3 -m json.tool .claude/settings.json)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(grep -iE \"AQ\\\\.[A-Za-z0-9_-]{20,}|tvly-|sk-lf-[a-zA-Z0-9]|AIza[0-9A-Za-z_-]{35}|Jhansi|Nadella\")",
+      "Bash(grep -oiE \"AQ\\\\.[A-Za-z0-9_-]{20,}|tvly-[A-Za-z0-9-]+|AIza[0-9A-Za-z_-]{35}\")",
+      "Bash(python -c \"import fastapi,uvicorn;print\\('fastapi',fastapi.__version__,'| uvicorn',uvicorn.__version__\\)\")",
+      "Bash(python -m pytest /private/tmp/claude-501/-Users-parthsharma-Desktop-eve-ai-agent-weekend/11b4e354-e447-43fc-9f23-4415edb42465/scratchpad/test_guardrails.py -q)",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE python -W error::DeprecationWarning -c ' *)",
+      "Bash(RETRIEVAL_MIN_SCORE=0.35 USE_GUARDRAILS_AI=false GEMINI_MODEL=gemini-2.5-flash python -c ' *)",
+      "Bash(USE_GUARDRAILS=false python -c ' *)",
+      "Bash(grep -n \"^## Step 2\\\\|^## Step 3\\\\|^Create \\\\*\\\\*\\\\`RAG_AGENT_CODE/static\" deploy.md)",
+      "Bash(grep -c '```html' deploy.md)",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE nohup python -m uvicorn app:app --host 0.0.0.0 --port 8123)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(curl -s -m 20 http://localhost:8123/healthz)",
+      "Bash(curl -s -m 20 http://localhost:8123/)",
+      "Bash(curl -s -m 90 -X POST http://localhost:8123/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"Who was Ronald Reagan?\"}')",
+      "Bash(pkill -f \"uvicorn app:app --host 0.0.0.0 --port 8123\")",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE GEMINI_API_KEY=\"\" python -c \"import config, guardrails, memory, retrieval, self_critique, agent, app; print\\('all modules import OK'\\)\")",
+      "Bash(python -c \"from config import Settings; s=Settings\\(\\); print\\('settings OK, min_score =', s.retrieval_min_score\\)\")",
+      "Bash(python -m pytest test_guardrails.py -q)",
+      "Bash(GEMINI_API_KEY=\"\" TAVILY_API_KEY=\"\" KMP_DUPLICATE_LIB_OK=TRUE python -c \"import config, guardrails, memory, retrieval, self_critique, agent, app; print\\('all modules import OK'\\)\")",
+      "Bash(GEMINI_API_KEY=\"\" python -c \"from config import Settings; s = Settings\\(\\); print\\('settings OK, min_score =', s.retrieval_min_score\\)\")",
+      "Bash(python -m pytest -q)",
+      "Bash(FASTEMBED_CACHE_PATH=__CMDSUB_OUTPUT__/.fastembed_test KMP_DUPLICATE_LIB_OK=TRUE python -c ' *)",
+      "Bash(rm -rf ./.fastembed_test)",
+      "Bash(python -c \"import yaml;d=yaml.safe_load\\(open\\('render.yaml'\\)\\);print\\(' OK -', len\\(d['services'][0]['envVars']\\),'env vars'\\)\")",
+      "Bash(grep -E '\\(^|/\\)\\\\.env$')"
     ]
   }
 }

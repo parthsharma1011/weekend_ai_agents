@@ -1,0 +1,64 @@
+# Render Blueprint — infrastructure as code.
+#
+# On Render: New + -> Blueprint -> pick this repo. Render reads this file and
+# creates the service for you, so nothing has to be typed into the dashboard
+# except the secret values marked `sync: false` below.
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: gemini-rag-agent
+    runtime: python
+    plan: free
+    branch: main
+
+    # The app lives in a subfolder, not the repo root. Without this, Render
+    # looks for requirements.txt at the top level and the build fails instantly.
+    rootDir: RAG_AGENT_CODE
+
+    # The FAISS index is gitignored (it is a build artifact and can embed
+    # document text), so it does not exist in a fresh clone. We rebuild it here
+    # from ./docs, which IS committed. Skip this and the app crashes on boot
+    # with FileNotFoundError from Retriever._load().
+    buildCommand: "pip install -r requirements.txt && python ingest.py ./docs"
+
+    # Render assigns the port at runtime via $PORT and probes it to decide
+    # whether the deploy succeeded. Binding to 127.0.0.1 or a fixed port makes
+    # the health check fail and the deploy time out.
+    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
+
+    healthCheckPath: /healthz
+
+    # Every push to `branch` above redeploys automatically.
+    autoDeploy: true
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+
+      # fastembed defaults its model cache to $TMPDIR (/tmp on Linux), which is
+      # not guaranteed to survive from the build step into the running service.
+      # Without this, the ~64 MB embedding model downloads during the build for
+      # ingest.py, then downloads AGAIN on the first request. Pointing the cache
+      # inside the project directory makes the build's download persist.
+      - key: FASTEMBED_CACHE_PATH
+        value: "/opt/render/project/src/RAG_AGENT_CODE/.fastembed_cache"
+
+      # --- Secrets: declared here, values entered in the dashboard -----------
+      # `sync: false` means "this service needs this variable, but its value is
+      # NOT in git". Render prompts you for it on first deploy.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+
+      # --- Non-secret tuning -------------------------------------------------
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+
+      # Default in config.py is 0.50, which filters out almost everything for
+      # broad questions ("what is this document about?" scores ~0.40-0.47) and
+      # sends them to web search instead of your documents. 0.35 keeps them.
+      - key: RETRIEVAL_MIN_SCORE
+        value: "0.35"
